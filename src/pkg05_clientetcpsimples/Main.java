@@ -15,6 +15,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.net.Socket;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,6 +25,7 @@ import java.util.logging.Logger;
  */
 public class Main extends Thread{
     private Tela telaJogo;
+    private TelaPontuacao telaPontos;
     private Socket socket;
     private BufferedReader bfr;
     private InputStreamReader inr;
@@ -32,6 +34,7 @@ public class Main extends Thread{
     private Writer ouw;
     private BufferedWriter bfw;
     int[][] matrizJogo;
+    String placarJogo;
     /**
      * @param args the command line arguments
      */
@@ -46,13 +49,14 @@ public class Main extends Thread{
     @Override
     public void run() {
         int lin, col;
-        
+        placarJogo = "";
         this.escutar();
         this.telaJogo = new Tela(8, 8, 60, matrizJogo, this);
-        
+        this.telaPontos = new TelaPontuacao(telaJogo);
         System.out.println("iniciar tela");
         while (socket.isConnected()) {
             this.escutar();
+            telaPontos.desenhaTela(placarJogo);
             telaJogo.desenhaTela(matrizJogo);
         }
     }
@@ -73,9 +77,15 @@ public class Main extends Thread{
         InputStream in = null;
         try {
             in = socket.getInputStream();
-            String msg = "";
             ObjectInputStream obj = new ObjectInputStream(in);
-            matrizJogo = (int[][]) obj.readObject();
+            Map<String, Object> map = (Map<String, Object>) obj.readObject();
+            if(map.get("Jogo") instanceof int[][]){
+                matrizJogo = (int[][]) map.get("Jogo");
+            }
+            if(map.get("Pontos") instanceof String){
+                placarJogo = (String) map.get("Pontos");
+            }
+            
         } catch (IOException | ClassNotFoundException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
